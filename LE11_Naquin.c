@@ -28,7 +28,7 @@ printf("Information succesfully saved to students.txt\n");
 
 file = fopen("students.txt", "r");
 if (file == NULL){
-    printf("Error opening file!\n");
+    printf("Error reading file!\n");
     return 1;
 }
 
@@ -45,3 +45,4 @@ fclose(file);
 return 0;
 
 }
+
