@@ -4,8 +4,8 @@
 int main(){
     
 FILE *file = fopen("students.txt", "w");
-char name [90];
-char section [100];
+char name [100];
+char section [30];
 
 printf("Complete Name: ");
 fgets(name, sizeof(name), stdin);
@@ -32,8 +32,8 @@ if (file == NULL){
     return 1;
 }
 
-char fname [70];
-char fsection [100];
+char fname [100];
+char fsection [30];
 
 fgets(fname, sizeof(fname), file);
 fgets(fsection, sizeof(fsection), file);
@@ -43,4 +43,5 @@ printf("%s", fsection);
 fclose(file);
 
 return 0;
+
 }
