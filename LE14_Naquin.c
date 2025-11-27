@@ -24,14 +24,14 @@ int main() {
         fprintf(fptr, "Complete Name: %s", name);
         fprintf(fptr, "Section: %s\n", section);
 
-        printf("\n\nRecord added and saved successfully");
+        printf("\nRecord added and saved successfully.");
     
         int input;
         printf("Add another student? [Enter 1 for Yes, 0 for No]\n");
         scanf("%d", &input);
         getchar();
         if (input == 0) {
-            printf("All student records have been saved");
+            printf("All student records have been saved.");
             break;
         }
     }
