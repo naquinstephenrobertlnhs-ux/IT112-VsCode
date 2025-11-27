@@ -8,6 +8,11 @@ int main() {
     char name[50];
     char section[50];
     
+    if (fptr == NULL) {
+        printf("Error file not found!");
+        return 1;
+    }
+    
     while (1) {
         printf("Enter Student Number: ");
         scanf("%d", &studentNumber);
@@ -36,5 +41,6 @@ int main() {
         }
     }
     
+    fclose(fptr);
     return 0;
 }
