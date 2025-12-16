@@ -3,6 +3,7 @@
 #include <ctype.h>
 
 #define MAX_PROVIDERS 50
+#define MAX_REVIEWS 30
 #define FILENAME "ProvidersRegisteredLists.txt"
 
 struct ServiceProvider {
@@ -11,7 +12,8 @@ struct ServiceProvider {
     char contact[20];
     float rating;
     int ratingCount;
-    char review[100];
+    char reviews[MAX_REVIEWS][100];
+    int reviewCount;
 };
 
 void rewriteFile(struct ServiceProvider providers[], int count) {
@@ -26,7 +28,14 @@ void rewriteFile(struct ServiceProvider providers[], int count) {
         fprintf(fp, "Service Type: %s\n", providers[i].serviceType);
         fprintf(fp, "Contact: %s\n", providers[i].contact);
         fprintf(fp, "Rating: %.1f (%d ratings)\n", providers[i].rating, providers[i].ratingCount);
-        fprintf(fp, "Reviews: %s\n", providers[i].review);
+        fprintf(fp, "Reviews:\n");
+        if (providers[i].reviewCount == 0) {
+            fprintf(fp, "- No reviews yet\n");
+        } else {
+            for (int j = 0; j < providers[i].reviewCount; j++) {
+                fprintf(fp, "- %s\n", providers[i].reviews[j]);
+            }
+        }
         fprintf(fp, "---\n");
     }
     fclose(fp);
@@ -40,7 +49,6 @@ int loadProviders(struct ServiceProvider providers[]) {
     while (fgets(line, sizeof(line), fp)) {
         if (strncmp(line, "ID Number:", 10) != 0) continue;
         fgets(line, sizeof(line), fp);
-
         sscanf(line, "Name: %[^\n]", providers[count].name);
         fgets(line, sizeof(line), fp);
         sscanf(line, "Service Type: %[^\n]", providers[count].serviceType);
@@ -48,9 +56,18 @@ int loadProviders(struct ServiceProvider providers[]) {
         sscanf(line, "Contact: %[^\n]", providers[count].contact);
         fgets(line, sizeof(line), fp);
         sscanf(line, "Rating: %f (%d ratings)", &providers[count].rating, &providers[count].ratingCount);
+        providers[count].reviewCount = 0;
         fgets(line, sizeof(line), fp);
-        sscanf(line, "Reviews: %[^\n]", providers[count].review);
-        fgets(line, sizeof(line), fp);
+        while (fgets(line, sizeof(line), fp)) {
+            if (strncmp(line, "---", 3) == 0) break;
+            if (strncmp(line, "- ", 2) == 0) {
+                line[strcspn(line, "\n")] = 0;
+                if (strcmp(line + 2, "No reviews yet") != 0) { 
+                    strcpy(providers[count].reviews[providers[count].reviewCount], line + 2);
+                    providers[count].reviewCount++;
+                }
+            }
+        }
         count++;
         if (count >= MAX_PROVIDERS) break;
     }
@@ -79,9 +96,33 @@ void appendProvider(struct ServiceProvider *p, int number) {
     fprintf(fp, "Service Type: %s\n", p->serviceType);
     fprintf(fp, "Contact: %s\n", p->contact);
     fprintf(fp, "Rating: %.1f (%d ratings)\n", p->rating, p->ratingCount);
-    fprintf(fp, "Reviews: %s\n", p->review);
+    fprintf(fp, "Reviews:\n");
+    if (p->reviewCount == 0) {
+        fprintf(fp, "- No reviews yet\n");
+    } else {
+        for (int i = 0; i < p->reviewCount; i++) {
+            fprintf(fp, "- %s\n", p->reviews[i]);
+        }
+    }
     fprintf(fp, "---\n");
     fclose(fp);
+}
+
+void displayProvider(struct ServiceProvider *p, int id) {
+    printf("\nID Number: %d\n", id);
+    printf("Name: %s\n", p->name);
+    printf("Service Type: %s\n", p->serviceType);
+    printf("Contact: %s\n", p->contact);
+    printf("Rating: %.1f (%d ratings)\n", p->rating, p->ratingCount);
+    printf("Reviews:\n");
+    if (p->reviewCount == 0) {
+        printf("- No reviews yet\n");
+    } else {
+        for (int j = 0; j < p->reviewCount; j++) {
+            printf("- %s\n", p->reviews[j]);
+        }
+    }
+    printf("---\n");
 }
 
 int main() {
@@ -108,7 +149,7 @@ int main() {
         printf("\n------------------------------------------\n");
         printf("     LOCAL SERVICES DIRECTORY SYSTEM\n");
         printf("------------------------------------------\n");
-        printf("Please choose a number of choices.\n");
+        printf("Please choose an option.\n");
         printf("1. Register Service Provider\n");
         printf("2. View All Providers\n");
         printf("3. Search by Service Type\n");
@@ -117,8 +158,7 @@ int main() {
         printf("6. Exit\n\n");
         printf("Enter your choice: ");
         if (scanf("%d", &choice) != 1) {
-            printf("\nInvalid choice. Try again.\n");
-            printf("Returning to Main Menu...\n");
+            printf("\nInvalid choice. Try again.\nReturning to Main Menu...\n");
             while (getchar() != '\n');
             continue;
         }
@@ -130,14 +170,26 @@ int main() {
                     printf("\nEnter Provider Name: ");
                     fgets(providers[count].name, 50, stdin);
                     providers[count].name[strcspn(providers[count].name, "\n")] = 0;
+                    if (strlen(providers[count].name) == 0) {
+                        printf("\nName cannot be empty. Registration cancelled.\nReturning to Main Menu...\n");
+                        break;
+                    }
 
                     printf("Enter Service Type: ");
                     fgets(providers[count].serviceType, 50, stdin);
                     providers[count].serviceType[strcspn(providers[count].serviceType, "\n")] = 0;
+                    if (strlen(providers[count].serviceType) == 0) {
+                        printf("\nService type cannot be empty. Registration cancelled.\nReturning to Main Menu...\n");
+                        break;
+                    }
 
                     printf("Enter Contact Number: ");
                     fgets(providers[count].contact, 20, stdin);
                     providers[count].contact[strcspn(providers[count].contact, "\n")] = 0;
+                    if (strlen(providers[count].contact) == 0) {
+                        printf("\nContact number cannot be empty. Registration cancelled.\nReturning to Main Menu...\n");
+                        break;
+                    }
 
                     int valid = 1;
                     for (int i = 0; providers[count].contact[i] != '\0'; i++) {
@@ -148,43 +200,34 @@ int main() {
                     }
 
                     if (!valid) {
-                        printf("\nInvalid contact number. Numbers only.\n");
-                        printf("Returning to Main Menu...\n");
+                        printf("\nInvalid contact number. Numbers only.\nReturning to Main Menu...\n");
                         break;
                     }
 
                     providers[count].rating = 0.0;
                     providers[count].ratingCount = 0;
-                    strcpy(providers[count].review, "No reviews yet");
+                    providers[count].reviewCount = 0;
 
                     int newNumber = getLastNumber() + 1;
                     appendProvider(&providers[count], newNumber);
                     count++;
 
-                    printf("\nProvider Registered Successfully!\n");
+                    printf("\nProvider Registered Successfully!\nReturning to Main Menu...\n");
                 } else {
-                    printf("\nDirectory is full. Cannot register more providers.\n");
-                    printf("Returning to Main Menu...\n");
+                    printf("\nDirectory is full. Cannot register more providers.\nReturning to Main Menu...\n");
                 }
                 break;
 
             case 2:
-                 if (count == 0) {
-                    printf("\nNo providers registered yet.\n");
-                    printf("Returning to Main Menu...\n");
-
-                    } else {
-                        printf("\n       All providers registered:\n");
-                        printf("------------------------------------------\n");
-                        for (int i = 0; i < count; i++) {
-                            printf("\nID Number: %d\n", i + 1);
-                            printf("Name: %s\n", providers[i].name);
-                            printf("Service Type: %s\n", providers[i].serviceType);
-                            printf("Contact: %s\n", providers[i].contact);
-                            printf("Rating: %.1f (%d ratings)\n", providers[i].rating, providers[i].ratingCount);
-                            printf("Reviews: %s\n", providers[i].review);
-                            printf("---\n");
+                if (count == 0) {
+                    printf("\nNo providers registered yet.\nReturning to Main Menu...\n");
+                } else {
+                    printf("\n       All providers registered:\n");
+                    printf("------------------------------------------\n");
+                    for (int i = 0; i < count; i++) {
+                        displayProvider(&providers[i], i + 1);
                     }
+                    printf("\nReturning to Main Menu...\n");
                 }
                 break;
 
@@ -198,64 +241,80 @@ int main() {
                 printf("------------------------------------------\n");
                 for (int i = 0; i < count; i++) {
                     if (strstr(providers[i].serviceType, searchType)) {
-                        printf("\nID Number: %d\n", i + 1);
-                        printf("Name: %s\n", providers[i].name);
-                        printf("Service Type: %s\n", providers[i].serviceType);
-                        printf("Contact: %s\n", providers[i].contact);
-                        printf("Rating: %.1f (%d ratings)\n", providers[i].rating, providers[i].ratingCount);
-                        printf("Reviews: %s\n", providers[i].review);
-                        printf("---\n");
+                        displayProvider(&providers[i], i + 1);
                         found = 1;
                     }
                 }
                 if (!found) printf("\nNo providers found for that service type.\n");
-                            printf("Returning to Main Menu...\n");
+                printf("\nReturning to Main Menu...\n");
                 break;
 
             case 4:
                 if (count == 0) {
-                    printf("\nNo providers available to rate.\n");
-                    printf("Returning to Main Menu...\n");
+                    printf("\nNo providers available to rate.\nReturning to Main Menu...\n");
                     break;
                 }
                 int num;
                 float newRating;
+
                 printf("\nEnter Provider ID Number to Rate (1-%d): ", count);
-                scanf("%d", &num);
+                if (scanf("%d", &num) != 1) {
+                    while (getchar() != '\n');
+                    printf("\nInvalid provider ID Number. Numbers only.\nReturning to Main Menu...\n");
+                    break;
+                }
                 getchar();
 
                 if (num > 0 && num <= count) {
                     struct ServiceProvider *p = &providers[num - 1];
-                    printf("Enter Rating (1.0-5.0): ");
-                    scanf("%f", &newRating);
+
+                    printf("Enter your rating (1.0-5.0): ");
+                    if (scanf("%f", &newRating) != 1) {
+                        while (getchar() != '\n');
+                        printf("\nInvalid rating input. Numbers only.\nReturning to Main Menu...\n");
+                        break;
+                    }
                     getchar();
 
                     if (newRating < 1.0 || newRating > 5.0) {
-                        printf("\nInvalid rating. Please enter 1.0-5.0\n");
-
+                        printf("\nInvalid rating. Please enter between 1.0 and 5.0.\nReturning to Main Menu...\n");
                     } else {
                         p->rating = ((p->rating * p->ratingCount) + newRating) / (p->ratingCount + 1);
                         p->ratingCount++;
 
-                        printf("Enter Review: ");
-                        fgets(p->review, 100, stdin);
-                        p->review[strcspn(p->review, "\n")] = 0;
+                        printf("Enter short review/feedback: ");
+                        char newReview[100];
+                        fgets(newReview, 100, stdin);
+                        newReview[strcspn(newReview, "\n")] = 0;
+
+                        if (p->reviewCount < MAX_REVIEWS) {
+                            strcpy(p->reviews[p->reviewCount], newReview);
+                            p->reviewCount++;
+                        } else {
+                            printf("\nMaximum reviews reached. Cannot add more.\n");
+                        }
+
                         rewriteFile(providers, count);
-                        printf("\nThank you! Rating added successfully.\n");
+                        printf("\nThank you! Rating added successfully.\nReturning to Main Menu...\n");
                     }
-                } else  printf("\nInvalid provider ID number.\n");
-                        printf("Returning to Main Menu...\n");
+                } else {
+                    printf("\nInvalid provider number.\nReturning to Main Menu...\n");
+                }
                 break;
 
             case 5:
                 printf("\nEnter Admin Password: ");
                 fgets(adminPass, 20, stdin);
                 adminPass[strcspn(adminPass, "\n")] = 0;
+
                 if (strcmp(adminPass, "admin123") == 0) {
+                    printf("\nAccess granted!\nProceed to Admin Panel...\n");
+
                     do {
                         printf("\n------------------------------------------\n");
                         printf("              ADMIN PANEL\n");
                         printf("------------------------------------------\n");
+                        printf("Please choose an admin option.\n");
                         printf("1. View All Providers\n");
                         printf("2. Edit Provider Info\n");
                         printf("3. Delete Provider\n");
@@ -263,25 +322,18 @@ int main() {
                         printf("Enter your choice: ");
                         scanf("%d", &adminChoice);
                         getchar();
-                        switch (adminChoice) {
 
+                        switch (adminChoice) {
                             case 1:
                                 if (count == 0) {
-                                    printf("\nNo providers registered yet.\n");
-                                    printf("Returning to Admin Menu...\n");
-
+                                    printf("\nNo providers registered yet.\nReturning to Admin Menu...\n");
                                 } else {
                                     printf("\n       All providers registered:\n");
                                     printf("------------------------------------------\n");
                                     for (int i = 0; i < count; i++) {
-                                        printf("\nID Number: %d\n", i + 1);
-                                        printf("Name: %s\n", providers[i].name);
-                                        printf("Service Type: %s\n", providers[i].serviceType);
-                                        printf("Contact: %s\n", providers[i].contact);
-                                        printf("Rating: %.1f (%d ratings)\n", providers[i].rating, providers[i].ratingCount);
-                                        printf("Reviews: %s\n", providers[i].review);
-                                        printf("---\n");
+                                        displayProvider(&providers[i], i + 1);
                                     }
+                                    printf("Returning to Admin Menu...\n");
                                 }
                                 break;
 
@@ -292,37 +344,49 @@ int main() {
                                 getchar();
 
                                 if (editNum > 0 && editNum <= count) {
+                                    char temp[50];
+
                                     printf("Enter new name: ");
                                     fgets(providers[editNum - 1].name, 50, stdin);
                                     providers[editNum - 1].name[strcspn(providers[editNum - 1].name, "\n")] = 0;
+                                    if (strlen(providers[editNum - 1].name) == 0) {
+                                        printf("\nName cannot be empty. Edit cancelled.\nReturning to Admin Menu...\n");
+                                        break;
+                                    }
 
                                     printf("Enter new service type: ");
                                     fgets(providers[editNum - 1].serviceType, 50, stdin);
                                     providers[editNum - 1].serviceType[strcspn(providers[editNum - 1].serviceType, "\n")] = 0;
+                                    if (strlen(providers[editNum - 1].serviceType) == 0) {
+                                        printf("\nService type cannot be empty. Edit cancelled.\nReturning to Admin Menu...\n");
+                                        break;
+                                    }
 
                                     printf("Enter Contact Number: ");
-                                    fgets(providers[count].contact, 20, stdin);
-                                    providers[count].contact[strcspn(providers[count].contact, "\n")] = 0;
+                                    fgets(providers[editNum - 1].contact, 20, stdin);
+                                    providers[editNum - 1].contact[strcspn(providers[editNum - 1].contact, "\n")] = 0;
+                                    if (strlen(providers[editNum - 1].contact) == 0) {
+                                        printf("\nContact number cannot be empty. Edit cancelled.\nReturning to Admin Menu...\n");
+                                        break;
+                                    }
 
                                     int valid = 1;
-                                    for (int i = 0; providers[count].contact[i] != '\0'; i++) {
-                                        if (!isdigit(providers[count].contact[i])) {
-                                           valid = 0;
-                                           break;
+                                    for (int i = 0; providers[editNum - 1].contact[i] != '\0'; i++) {
+                                        if (!isdigit(providers[editNum - 1].contact[i])) {
+                                            valid = 0;
+                                            break;
                                         }
                                     }
 
                                     if (!valid) {
-                                        printf("\nInvalid contact number. Numbers only.\n");
-                                        printf("Returning to Admin Menu...\n");
+                                        printf("\nInvalid contact number. Numbers only.\nReturning to Admin Menu...\n");
                                         break;
                                     }
 
                                     rewriteFile(providers, count);
-                                    printf("\nProvider updated successfully!\n");
+                                    printf("\nProvider updated successfully!\nReturning to Admin Menu...\n");
                                 } else {
-                                    printf("\nInvalid provider number.\n");
-                                    printf("\nReturning to Admin Menu...\n");
+                                    printf("\nInvalid provider ID number.\nReturning to Admin Menu...\n");
                                 }
                                 break;
                             }
@@ -336,25 +400,21 @@ int main() {
                                     for (int i = delNum - 1; i < count - 1; i++) providers[i] = providers[i + 1];
                                     count--;
                                     rewriteFile(providers, count);
-                                    printf("\nProvider deleted successfully!\n");
+                                    printf("\nProvider deleted successfully!\nReturning to Admin Menu...\n");
 
-                                } else printf("\nInvalid provider ID number.\n");
-                                       printf("Returning to Admin Menu...\n");
-
+                                } else printf("\nInvalid provider ID number.\nReturning to Admin Menu...\n");
                                 break;
                             }
 
                             case 4:
+                            printf("\nReturning to Main Menu...\n");
                                 break;
                             default:
-                                printf("\nInvalid admin choice.\n");
-                                printf("Returning to Admin Menu...\n");
-
-                            }
-                        } while (adminChoice != 4);
-                    } else printf("\nIncorrect password. Access denied.\n");
-                        printf("Returning to Main Menu...\n");
-                    break;
+                                printf("\nInvalid admin choice.\nReturning to Admin Menu...\n");
+                        }
+                    } while (adminChoice != 4);
+                } else printf("\nIncorrect password. Access denied.\nReturning to Main Menu...\n");
+                break;
 
             case 6:
                 printf("\nAre you sure you want to exit? (Y/N): ");
@@ -365,7 +425,7 @@ int main() {
                     printf("\nGood Bye! Come back again...\n\n");
                     return 0;
                 } else {
-                  printf("\nReturning to Main Menu...\n");
+                    printf("\nReturning to Main Menu...\n");
                 }
                 break;
 
@@ -373,5 +433,6 @@ int main() {
                 printf("\nInvalid choice. Try again.\n");
         }
     } while (1);
+
     return 0;
 }
