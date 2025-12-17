@@ -1,7 +1,7 @@
-#include <stdio.h>
+#include <stdio.h>       
 #include <string.h>
 #include <ctype.h>
-
+//NAQUIN
 #define MAX_PROVIDERS 50
 #define MAX_REVIEWS 30
 #define FILENAME "ProvidersRegisteredLists.txt"
@@ -29,6 +29,7 @@ void rewriteFile(struct ServiceProvider providers[], int count) {
         fprintf(fp, "Contact: %s\n", providers[i].contact);
         fprintf(fp, "Rating: %.1f (%d ratings)\n", providers[i].rating, providers[i].ratingCount);
         fprintf(fp, "Reviews:\n");
+        
         if (providers[i].reviewCount == 0) {
             fprintf(fp, "- No reviews yet\n");
         } else {
@@ -57,11 +58,13 @@ int loadProviders(struct ServiceProvider providers[]) {
         fgets(line, sizeof(line), fp);
         sscanf(line, "Rating: %f (%d ratings)", &providers[count].rating, &providers[count].ratingCount);
         providers[count].reviewCount = 0;
+
         fgets(line, sizeof(line), fp);
         while (fgets(line, sizeof(line), fp)) {
             if (strncmp(line, "---", 3) == 0) break;
             if (strncmp(line, "- ", 2) == 0) {
                 line[strcspn(line, "\n")] = 0;
+                
                 if (strcmp(line + 2, "No reviews yet") != 0) { 
                     strcpy(providers[count].reviews[providers[count].reviewCount], line + 2);
                     providers[count].reviewCount++;
@@ -97,6 +100,7 @@ void appendProvider(struct ServiceProvider *p, int number) {
     fprintf(fp, "Contact: %s\n", p->contact);
     fprintf(fp, "Rating: %.1f (%d ratings)\n", p->rating, p->ratingCount);
     fprintf(fp, "Reviews:\n");
+    
     if (p->reviewCount == 0) {
         fprintf(fp, "- No reviews yet\n");
     } else {
@@ -115,6 +119,7 @@ void displayProvider(struct ServiceProvider *p, int id) {
     printf("Contact: %s\n", p->contact);
     printf("Rating: %.1f (%d ratings)\n", p->rating, p->ratingCount);
     printf("Reviews:\n");
+
     if (p->reviewCount == 0) {
         printf("- No reviews yet\n");
     } else {
@@ -144,7 +149,7 @@ int main() {
     } else fclose(fp_check);
 
     count = loadProviders(providers);
-
+//PAJAL
     do {
         printf("\n------------------------------------------\n");
         printf("     LOCAL SERVICES DIRECTORY SYSTEM\n");
@@ -165,6 +170,7 @@ int main() {
         getchar();
 
         switch (choice) {
+            
             case 1:
                 if (count < MAX_PROVIDERS) {
                     printf("\nEnter Provider Name: ");
@@ -217,7 +223,7 @@ int main() {
                     printf("\nDirectory is full. Cannot register more providers.\nReturning to Main Menu...\n");
                 }
                 break;
-
+//KIAMCO
             case 2:
                 if (count == 0) {
                     printf("\nNo providers registered yet.\nReturning to Main Menu...\n");
@@ -301,7 +307,7 @@ int main() {
                     printf("\nInvalid provider number.\nReturning to Main Menu...\n");
                 }
                 break;
-
+//PAGARAN
             case 5:
                 printf("\nEnter Admin Password: ");
                 fgets(adminPass, 20, stdin);
@@ -324,6 +330,7 @@ int main() {
                         getchar();
 
                         switch (adminChoice) {
+
                             case 1:
                                 if (count == 0) {
                                     printf("\nNo providers registered yet.\nReturning to Admin Menu...\n");
@@ -390,7 +397,7 @@ int main() {
                                 }
                                 break;
                             }
-
+//MENDOZA
                             case 3: {
                                 int delNum;
                                 printf("\nEnter Provider ID Number to Delete (1-%d): ", count);
@@ -411,10 +418,11 @@ int main() {
                                 break;
                             default:
                                 printf("\nInvalid admin choice.\nReturning to Admin Menu...\n");
-                        }
-                    } while (adminChoice != 4);
-                } else printf("\nIncorrect password. Access denied.\nReturning to Main Menu...\n");
-                break;
+                            }
+                                } while (adminChoice != 4);
+                                
+                            } else printf("\nIncorrect password. Access denied.\nReturning to Main Menu...\n");
+                            break;
 
             case 6:
                 printf("\nAre you sure you want to exit? (Y/N): ");
